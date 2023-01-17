@@ -360,13 +360,13 @@ public class ATMInterface {
         JButton applyBtn = new JButton("Apply");
         JButton cancelBtn = new JButton("Cancel");
 
-        databaseTxt.setBounds(40, 20, 50, 10);
+        databaseTxt.setBounds(40, 20, 100, 10);
         databaseIn.setBounds(40, 40, 300, 25);
-        nameTxt.setBounds(40, 70, 70, 15);
+        nameTxt.setBounds(40, 70, 100, 15);
         nameIn.setBounds(40, 90, 300, 25);
-        passTxt.setBounds(40, 120, 50, 15);
+        passTxt.setBounds(40, 120, 100, 15);
         passIn.setBounds(40, 140, 300, 25);
-        tableTxt.setBounds(40, 170, 70, 15);
+        tableTxt.setBounds(40, 170, 100, 15);
         tableIn.setBounds(40, 190, 300, 25);
 
         applyBtn.setBounds(40, 320, 300, 50);
@@ -616,18 +616,18 @@ public class ATMInterface {
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
         dateIn.setBounds(40, 190, 300, 25);
-        emailTxt.setBounds(40, 320, 70, 15);
-        emailIn.setBounds(40, 340, 300, 25);
-        phoneTxt.setBounds(40, 370, 70, 15);
-        phoneIn.setBounds(40, 390, 300, 25);
+        emailTxt.setBounds(40, 220, 70, 15);
+        emailIn.setBounds(40, 240, 300, 25);
+        phoneTxt.setBounds(40, 270, 70, 15);
+        phoneIn.setBounds(40, 290, 300, 25);
 
-        registerBtn.setBounds(40, 480, 300, 50);
+        registerBtn.setBounds(40, 380, 300, 50);
         registerBtn.setFont(new Font(null, Font.BOLD, 20));
         registerBtn.addActionListener(e -> registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText(), adminBtn.isSelected(), emailIn.getText(), phoneIn.getText()));
-        cancelBtn.setBounds(40, 540, 300, 50);
+        cancelBtn.setBounds(40, 440, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> adminForm()));
-        adminBtn.setBounds(40, 420, 300, 50);
+        adminBtn.setBounds(40, 320, 300, 50);
         adminBtn.setFont(new Font(null, Font.BOLD, 20));
 
         atm.add(emailTxt);
@@ -845,7 +845,7 @@ public class ATMInterface {
         registerBtn.addActionListener(e -> {
             if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || dateIn.getText().equals("") || emailIn.getText().equals("") || phoneIn.getText().equals("")){
                 JOptionPane.showMessageDialog(null, "Error: one text field is empty", "Error", JOptionPane.ERROR_MESSAGE);
-            } else if (emailIn.getText().contains("@")){
+            } else if (!emailIn.getText().contains("@")){
                 JOptionPane.showMessageDialog(null, "Error: email isn't valid", "Error", JOptionPane.ERROR_MESSAGE);
             } else
                 registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText(), emailIn.getText(), phoneIn.getText());

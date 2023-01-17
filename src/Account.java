@@ -63,7 +63,8 @@ public class Account {
             }
             this.balance = 1000;
             int confirmPin = TagGenerator.randInt(1000, 9999);
-            String strInsert = "insert into" + table + "values('" + this.name + "', '" + this.lastName + "', '" + this.city + "', '" + this.date + "', 1000," + pin + ", '" + this.tag + "', " + this.admin + ", '" +this.email + "', '" + this.phone + "', " + confirmPin + ", false)";
+            String strInsert = "insert into " + table + " values('" + this.name + "', '" + this.lastName + "', '" + this.city + "', '" + this.date + "', 1000, " + pin + ", '" + this.tag + "', " + false + ", '" + this.email + "', '" + this.phone + "', " + confirmPin + ", false)";
+            System.out.println(strInsert);
             stmt.executeUpdate(strInsert);
             sendVerification(confirmPin);
         }catch (Exception ex){

@@ -4,10 +4,12 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.desktop.SystemEventListener;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.sql.Date;
 
 import static java.lang.String.valueOf;
 
@@ -18,7 +20,7 @@ public class Account {
     public static String table = "accounts";
     String name;
     String lastName;
-    String date;
+    Date date;
     String city;
     int balance;
     int pin;
@@ -28,7 +30,7 @@ public class Account {
     String phone;
     int code;
     boolean enabled;
-    public Account(String name, String lastName, String date, String city, int balance, int pin, String tag, boolean admin, String email, String phone, int code, boolean enabled){
+    public Account(String name, String lastName, java.sql.Date date, String city, int balance, int pin, String tag, boolean admin, String email, String phone, int code, boolean enabled){
         this.name = name;
         this.lastName = lastName;
         this.date = date;
@@ -44,13 +46,16 @@ public class Account {
     }
 
     public int createAccount(){
+        System.out.println("Creating account...");
         int pin = 1001;
         try(Connection conn = DriverManager.getConnection(link, username, pass);
             Statement stmt = conn.createStatement()){
             this.tag = TagGenerator.generateTag(name, lastName, city, date);
+            System.out.println("Tag generated: " + this.tag);
             boolean e = true;
             while(e){
                 int cPin = TagGenerator.randInt(1000, 9999);
+                System.out.println("Pin generated: " + cPin);
                 String strSelect = "SELECT pin from " + table;
                 ResultSet rset = stmt.executeQuery(strSelect);
                 while(rset.next()){
@@ -63,7 +68,8 @@ public class Account {
             }
             this.balance = 1000;
             int confirmPin = TagGenerator.randInt(1000, 9999);
-            String strInsert = "insert into " + table + " values('" + this.name + "', '" + this.lastName + "', '" + this.city + "', '" + this.date + "', 1000, " + pin + ", '" + this.tag + "', " + false + ", '" + this.email + "', '" + this.phone + "', " + confirmPin + ", false)";
+            System.out.println("Verification pin generated: " + confirmPin);
+            String strInsert = "insert into " + table + " values('" + this.name + "', '" + this.lastName + "', '" + this.city + "', DATE('" + this.date + "'), 1000, " + pin + ", '" + this.tag + "', " + false + ", '" + this.email + "', '" + this.phone + "', " + confirmPin + ", false)";
             System.out.println(strInsert);
             stmt.executeUpdate(strInsert);
             sendVerification(confirmPin);
@@ -75,6 +81,7 @@ public class Account {
     }
 
     public void sendVerification(int confirmPin){
+        System.out.println("Sending a verification mail...");
         Properties prop = new Properties();
         prop.put("mail.smtp.auth", "true");
         prop.put("mail.smtp.starttls.enable", "true");
@@ -161,7 +168,7 @@ public class Account {
         String aName = "";
         String aLastName = "";
         String aCity = "";
-        String aDate = "";
+        Date aDate = null;
         int aBalance = -1;
         int aPin = -1;
         String aTag = "";
@@ -178,7 +185,7 @@ public class Account {
                 aName = rset.getString("name");
                 aLastName = rset.getString("lastname");
                 aCity = rset.getString("city");
-                aDate = rset.getString("date");
+                aDate = rset.getDate("date");
                 aBalance = rset.getInt("balance");
                 aPin = rset.getInt("pin");
                 aTag = rset.getString("tag");
@@ -199,7 +206,7 @@ public class Account {
         String aName = "";
         String aLastName = "";
         String aCity = "";
-        String aDate = "";
+        Date aDate = null;
         int aBalance = -1;
         int aPin = -1;
         String aTag = "";
@@ -216,7 +223,7 @@ public class Account {
                 aName = rset.getString("name");
                 aLastName = rset.getString("lastname");
                 aCity = rset.getString("city");
-                aDate = rset.getString("date");
+                aDate = rset.getDate("date");
                 aBalance = rset.getInt("balance");
                 aPin = rset.getInt("pin");
                 aTag = rset.getString("tag");
@@ -233,16 +240,17 @@ public class Account {
         return new Account(aName, aLastName, aDate, aCity, aBalance, aPin, aTag, aAdmin, aEmail, aPhone, aCode, aEnabled);
     }
 
-    public int updateAccount(){
+    public Account updateAccount(){
         try(Connection conn = DriverManager.getConnection(link, username, pass);
         Statement stmt = conn.createStatement()) {
-            String strInsert = "UPDATE "+ table +" set balance = " + this.balance + ", name = '" + this.name + "', lastname = '" + this.lastName + "', city = '" + this.city + "', date = '" + this.date + "', tag = '" + this.tag + "', admin = " + this.admin + ", enabled = " + this.enabled + ", email = '" + this.email + "', phone = '" + this.phone +"' where pin = '" + this.pin + "'";
+            String strInsert = "UPDATE "+ table +" set balance = " + this.balance + ", name = '" + this.name + "', lastname = '" + this.lastName + "', city = '" + this.city + "', date = DATE('" + this.date + "'), tag = '" + this.tag + "', admin = " + this.admin + ", enabled = " + this.enabled + ", email = '" + this.email + "', phone = '" + this.phone +"' where pin = '" + this.pin + "'";
+            System.out.println(strInsert);
             stmt.executeUpdate(strInsert);
         }catch(Exception ex){
             ex.printStackTrace();
-            return -1;
+            return this;
         }
-        return 0;
+        return null;
     }
 
     public void resetVerification(){
@@ -271,14 +279,14 @@ public class Account {
                 String aName = rset.getString("name");
                 String aLastName = rset.getString("lastname");
                 String aCity = rset.getString("city");
-                String aDate = rset.getString("date");
+                Date aDate = rset.getDate("date");
                 String aBalance = Integer.toString(rset.getInt("balance"));
                 String aTag = rset.getString("tag");
                 boolean aAdmin = rset.getBoolean("admin");
                 String aEmail = rset.getString("email");
                 String aPhone = rset.getString("phone");
 
-                String[] data = {aName, aLastName, aCity, aDate, aBalance, aTag, valueOf(aAdmin), aEmail, aPhone};
+                String[] data = {aName, aLastName, aCity, String.valueOf(aDate), aBalance, aTag, valueOf(aAdmin), aEmail, aPhone};
 
                 tableModel.addRow(data);
             }

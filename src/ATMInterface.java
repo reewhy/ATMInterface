@@ -1,9 +1,17 @@
+import org.jdatepicker.impl.DateComponentFormatter;
+import org.jdatepicker.impl.JDatePanelImpl;
+import org.jdatepicker.impl.JDatePickerImpl;
+import org.jdatepicker.impl.UtilDateModel;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Year;
+import java.sql.Date;
+import java.util.Calendar;
 import java.util.Objects;
+import java.util.Properties;
 
 public class ATMInterface {
     JFrame atm;
@@ -70,7 +78,7 @@ public class ATMInterface {
         forgotPin.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                forgotMyPassWord();
+                forgotMyPassWord(nameIn.getText());
             }
         });
 
@@ -93,7 +101,7 @@ public class ATMInterface {
         atm.repaint();
     }
 
-    private void forgotMyPassWord(){
+    private void forgotMyPassWord(String startName){
         atm.getContentPane().removeAll();
 
         JLabel nameTxt = new JLabel("Name");
@@ -104,10 +112,19 @@ public class ATMInterface {
         JTextField nameIn = new JTextField();
         JTextField lastNameIn = new JTextField();
         JTextField cityIn = new JTextField();
-        JTextField dateIn = new JTextField();
+
+        UtilDateModel model = new UtilDateModel();
+        Properties prop = new Properties();
+        prop.put("text.today", "Today");
+        prop.put("text.month", "Month");
+        prop.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, prop);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateComponentFormatter());
+
+        nameIn.setText(startName);
 
         JToggleButton emailOrSMSBtn = new JToggleButton("EMAIL");
-        emailOrSMSBtn.setBounds(40, 220, 300, 50);
+        emailOrSMSBtn.setBounds(40, 230, 300, 50);
         emailOrSMSBtn.setFont(new Font(null, Font.BOLD, 20));
         emailOrSMSBtn.addActionListener(e -> {
             if(emailOrSMSBtn.isSelected()){
@@ -118,13 +135,14 @@ public class ATMInterface {
         });
 
         JButton confirmBtn = new JButton("Change");
-        confirmBtn.setBounds(40, 280, 300, 50);
+        confirmBtn.setBounds(40, 290, 300, 50);
         confirmBtn.setFont(new Font(null, Font.BOLD, 20));
         confirmBtn.addActionListener(e ->{
-            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || dateIn.getText().equals("")){
+            java.util.Date d = (java.util.Date) datePicker.getModel().getValue();
+            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || String.valueOf(datePicker.getModel().getValue()).equals("")){
                 JOptionPane.showMessageDialog(null, "Error: one text field is empty", "Error", JOptionPane.ERROR_MESSAGE);
             } else {
-                Account account = Account.getAccount(TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText()));
+                Account account = Account.getAccount(TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), new Date(d.getTime())));
                 int i = 1;
                 if(!Objects.equals(account.name, ""))
                     i  = account.forgotPin(emailOrSMSBtn.isSelected());
@@ -135,7 +153,7 @@ public class ATMInterface {
             }
         });
         JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.setBounds(40, 340, 300, 50);
+        cancelBtn.setBounds(40, 350, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> loginForm()));
 
@@ -150,7 +168,7 @@ public class ATMInterface {
         cityTxt.setBounds(40, 120, 50, 15);
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
-        dateIn.setBounds(40, 190, 300, 25);
+        datePicker.setBounds(40, 190, 300, 35);
 
 
         atm.add(nameIn);
@@ -159,7 +177,7 @@ public class ATMInterface {
         atm.add(lastNameTxt);
         atm.add(cityIn);
         atm.add(cityTxt);
-        atm.add(dateIn);
+        atm.add(datePicker);
         atm.add(dateTxt);
         atm.add(cancelBtn);
         atm.add(emailOrSMSBtn);
@@ -192,23 +210,46 @@ public class ATMInterface {
         settingsBtn.setBounds(40, 280, 300, 50);
         settingsBtn.setFont(new Font(null, Font.BOLD, 20));
         settingsBtn.addActionListener(e -> setting());
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setBounds(40, 340, 300, 50);
+        deleteBtn.setFont(new Font(null, Font.BOLD, 20));
+        deleteBtn.addActionListener(e -> {
+            int pin = Integer.parseInt((String) JOptionPane.showInputDialog(
+                    null,
+                    "Confirm the PIN",
+                    "PIN",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    loggedAccount.balance
+            ));
+            if(loggedAccount.pin != pin){
+                JOptionPane.showMessageDialog(null, "Error: PIN is wrong", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            loggedAccount.deleteAccount();
+            loggedAccount = null;
+            mainForm();
+        });
         JButton logoutBtn = new JButton("Logout");
-        logoutBtn.setBounds(40, 340, 300, 50);
+        logoutBtn.setBounds(40, 400, 300, 50);
         logoutBtn.setFont(new Font(null, Font.BOLD, 20));
         logoutBtn.addActionListener(e -> {
             loggedAccount = null;
             mainForm();
         });
 
+
         if(loggedAccount.admin){
             JButton adminBtn = new JButton("Admin");
-            adminBtn.setBounds(40, 400, 300, 50);
+            adminBtn.setBounds(40, 460, 300, 50);
             adminBtn.setFont(new Font(null, Font.BOLD, 20));
             adminBtn.addActionListener(e -> adminForm());
 
             atm.add(adminBtn);
         }
 
+        atm.add(deleteBtn);
         atm.add(settingsBtn);
         atm.add(logoutBtn);
         atm.add(viewBtn);
@@ -439,7 +480,8 @@ public class ATMInterface {
                 loggedAccount.balance
         );
         Account acc = Account.getAccount(tag);
-        changeForm(acc);
+        if(acc.name != "")
+            changeForm(acc);
     }
 
 
@@ -455,7 +497,19 @@ public class ATMInterface {
         JTextField nameIn = new JTextField();
         JTextField lastNameIn = new JTextField();
         JTextField cityIn = new JTextField();
-        JTextField dateIn = new JTextField();
+
+        UtilDateModel model = new UtilDateModel();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(accToChange.date);
+        model.setDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+        model.setSelected(true);
+        Properties prop = new Properties();
+        prop.put("text.today", "Today");
+        prop.put("text.month", "Month");
+        prop.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, prop);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateComponentFormatter());
+
         JTextField balanceIn = new JTextField();
 
         JButton registerBtn = new JButton("Change");
@@ -470,40 +524,44 @@ public class ATMInterface {
         cityTxt.setBounds(40, 120, 50, 15);
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
-        dateIn.setBounds(40, 190, 300, 25);
-        balanceTxt.setBounds(40, 220, 70, 15);
-        balanceIn.setBounds(40, 240, 300, 25);
+        datePicker.setBounds(40, 190, 300, 35);
+        balanceTxt.setBounds(40, 230, 70, 15);
+        balanceIn.setBounds(40, 250, 300, 25);
 
         nameIn.setText(accToChange.name);
         lastNameIn.setText(accToChange.lastName);
         cityIn.setText(accToChange.city);
-        dateIn.setText(accToChange.date);
         balanceIn.setText(String.valueOf(accToChange.balance));
 
-        registerBtn.setBounds(40, 460, 300, 50);
+        registerBtn.setBounds(40, 470, 300, 50);
         registerBtn.setFont(new Font(null, Font.BOLD, 20));
-        registerBtn.addActionListener(e -> {
+        registerBtn.addActionListener(e ->      {
+            java.util.Date d = (java.util.Date) datePicker.getModel().getValue();
+            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || String.valueOf(datePicker.getModel().getValue()).equals("") || balanceIn.getText().equals("")){
+                JOptionPane.showMessageDialog(null, "Error text field empty", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             accToChange.name = nameIn.getText();
             accToChange.lastName = lastNameIn.getText();
             accToChange.city = cityIn.getText();
-            accToChange.date = dateIn.getText();
+            accToChange.date = new Date(d.getTime());
             accToChange.balance = Integer.parseInt(balanceIn.getText());
-            accToChange.tag = TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText());
+            accToChange.tag = TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), new Date(d.getTime()));
             accToChange.admin = adminBtn.isSelected();
             accToChange.enabled = enabledBtn.isSelected();
-            int i = accToChange.updateAccount();
-            if(i == 0){
+            loggedAccount = accToChange.updateAccount();
+            if(loggedAccount.pin == accToChange.pin){
                 JOptionPane.showMessageDialog(null, "Account changed successfully", "Success", JOptionPane.PLAIN_MESSAGE);
                 adminForm();
             }
 
         });
-        cancelBtn.setBounds(40, 400, 300, 50);
+        cancelBtn.setBounds(40, 410, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> adminForm()));
-        adminBtn.setBounds(40, 280, 300, 50);
+        adminBtn.setBounds(40, 290, 300, 50);
         adminBtn.setFont(new Font(null, Font.BOLD, 20));
-        enabledBtn.setBounds(40, 340, 300, 50);
+        enabledBtn.setBounds(40, 350, 300, 50);
         enabledBtn.setFont(new Font(null, Font.BOLD, 20));
 
         enabledBtn.setSelected(accToChange.enabled);
@@ -520,7 +578,7 @@ public class ATMInterface {
         atm.add(cityTxt);
         atm.add(cityIn);
         atm.add(dateTxt);
-        atm.add(dateIn);
+        atm.add(datePicker);
         atm.add(cancelBtn);
         atm.add(registerBtn);
 
@@ -539,7 +597,14 @@ public class ATMInterface {
         JTextField nameIn = new JTextField();
         JTextField lastNameIn = new JTextField();
         JTextField cityIn = new JTextField();
-        JTextField dateIn = new JTextField();
+
+        UtilDateModel model = new UtilDateModel();
+        Properties prop = new Properties();
+        prop.put("text.today", "Today");
+        prop.put("text.month", "Month");
+        prop.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, prop);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateComponentFormatter());
 
         JButton registerBtn = new JButton("Delete");
         JButton cancelBtn = new JButton("Cancel");
@@ -551,11 +616,16 @@ public class ATMInterface {
         cityTxt.setBounds(40, 120, 50, 15);
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
-        dateIn.setBounds(40, 190, 300, 25);
+        datePicker.setBounds(40, 190, 300, 35);
 
-        registerBtn.setBounds(40, 220, 300, 50);
+        registerBtn.setBounds(40, 230, 300, 50);
         registerBtn.setFont(new Font(null, Font.BOLD, 20));
         registerBtn.addActionListener(e -> {
+            java.util.Date d = (java.util.Date) datePicker.getModel().getValue();
+            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || datePicker.getModel().getValue().toString().equals("")){
+                JOptionPane.showMessageDialog(null, "Error: text field empty", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             int pin = Integer.parseInt((String) JOptionPane.showInputDialog(
                     null,
                     "Confirm the PIN",
@@ -565,9 +635,9 @@ public class ATMInterface {
                     null,
                     loggedAccount.balance
             ));
-            deleteAccount(TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText()), loggedAccount.pin == pin);
+            deleteAccount(TagGenerator.generateTag(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), new Date(d.getTime())), loggedAccount.pin == pin);
         });/*registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText(), adminBtn.isSelected())*/
-        cancelBtn.setBounds(40, 280, 300, 50);
+        cancelBtn.setBounds(40, 290, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> adminForm()));
 
@@ -578,7 +648,7 @@ public class ATMInterface {
         atm.add(cityTxt);
         atm.add(cityIn);
         atm.add(dateTxt);
-        atm.add(dateIn);
+        atm.add(datePicker);
         atm.add(cancelBtn);
         atm.add(registerBtn);
 
@@ -599,7 +669,15 @@ public class ATMInterface {
         JTextField nameIn = new JTextField();
         JTextField lastNameIn = new JTextField();
         JTextField cityIn = new JTextField();
-        JTextField dateIn = new JTextField();
+
+        UtilDateModel model = new UtilDateModel();
+        Properties prop = new Properties();
+        prop.put("text.today", "Today");
+        prop.put("text.month", "Month");
+        prop.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, prop);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateComponentFormatter());
+
         JTextField emailIn = new JTextField();
         JTextField phoneIn = new JTextField();
 
@@ -615,19 +693,27 @@ public class ATMInterface {
         cityTxt.setBounds(40, 120, 50, 15);
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
-        dateIn.setBounds(40, 190, 300, 25);
-        emailTxt.setBounds(40, 220, 70, 15);
-        emailIn.setBounds(40, 240, 300, 25);
-        phoneTxt.setBounds(40, 270, 70, 15);
-        phoneIn.setBounds(40, 290, 300, 25);
+        datePicker.setBounds(40, 190, 300, 35);
+        emailTxt.setBounds(40, 230, 70, 15);
+        emailIn.setBounds(40, 250, 300, 25);
+        phoneTxt.setBounds(40, 280, 70, 15);
+        phoneIn.setBounds(40, 300, 300, 25);
 
-        registerBtn.setBounds(40, 380, 300, 50);
+        registerBtn.setBounds(40, 390, 300, 50);
         registerBtn.setFont(new Font(null, Font.BOLD, 20));
-        registerBtn.addActionListener(e -> registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText(), adminBtn.isSelected(), emailIn.getText(), phoneIn.getText()));
-        cancelBtn.setBounds(40, 440, 300, 50);
+        registerBtn.addActionListener(e -> {
+            java.util.Date d = (java.util.Date) datePicker.getModel().getValue();
+            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || datePicker.getModel().equals("") || emailIn.getText().equals("") ||  phoneIn.getText().equals("")){
+                JOptionPane.showMessageDialog(null, "Error: text field empty", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), new Date(d.getTime()), adminBtn.isSelected(), emailIn.getText(), phoneIn.getText());
+
+        });
+        cancelBtn.setBounds(40, 450, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> adminForm()));
-        adminBtn.setBounds(40, 320, 300, 50);
+        adminBtn.setBounds(40, 330, 300, 50);
         adminBtn.setFont(new Font(null, Font.BOLD, 20));
 
         atm.add(emailTxt);
@@ -642,7 +728,7 @@ public class ATMInterface {
         atm.add(cityTxt);
         atm.add(cityIn);
         atm.add(dateTxt);
-        atm.add(dateIn);
+        atm.add(datePicker);
         atm.add(cancelBtn);
         atm.add(registerBtn);
 
@@ -817,10 +903,18 @@ public class ATMInterface {
         JLabel emailTxt = new JLabel("Email");
         JLabel phoneTxt = new JLabel("Phone");
 
+        UtilDateModel model = new UtilDateModel();
+        Properties prop = new Properties();
+        prop.put("text.today", "Today");
+        prop.put("text.month", "Month");
+        prop.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, prop);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateComponentFormatter());
+
         JTextField nameIn = new JTextField();
         JTextField lastNameIn = new JTextField();
         JTextField cityIn = new JTextField();
-        JTextField dateIn = new JTextField();
+        /*JTextField dateIn = new JTextField();*/
         JTextField emailIn = new JTextField();
         JTextField phoneIn = new JTextField();
 
@@ -834,27 +928,31 @@ public class ATMInterface {
         cityTxt.setBounds(40, 120, 50, 15);
         cityIn.setBounds(40, 140, 300, 25);
         dateTxt.setBounds(40, 170, 70, 15);
-        dateIn.setBounds(40, 190, 300, 25);
-        emailTxt.setBounds(40, 220, 70, 15);
-        emailIn.setBounds(40, 240, 300, 25);
-        phoneTxt.setBounds(40, 270, 300, 15);
-        phoneIn.setBounds(40, 290, 300, 25);
+        datePicker.setBounds(40, 190, 300, 35);
+        /*dateIn.setBounds(40, 190, 300, 25);*/
+        emailTxt.setBounds(40, 230, 70, 15);
+        emailIn.setBounds(40, 250, 300, 25);
+        phoneTxt.setBounds(40, 280, 300, 15);
+        phoneIn.setBounds(40, 300, 300, 25);
 
-        registerBtn.setBounds(40, 320, 300, 50);
+        registerBtn.setBounds(40, 330, 300, 50);
         registerBtn.setFont(new Font(null, Font.BOLD, 20));
         registerBtn.addActionListener(e -> {
-            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || dateIn.getText().equals("") || emailIn.getText().equals("") || phoneIn.getText().equals("")){
+            java.util.Date d = (java.util.Date) datePicker.getModel().getValue();
+            System.out.println(String.valueOf(d));
+            if(nameIn.getText().equals("") || lastNameIn.getText().equals("") || cityIn.getText().equals("") || emailIn.getText().equals("") || phoneIn.getText().equals("")){
                 JOptionPane.showMessageDialog(null, "Error: one text field is empty", "Error", JOptionPane.ERROR_MESSAGE);
             } else if (!emailIn.getText().contains("@")){
                 JOptionPane.showMessageDialog(null, "Error: email isn't valid", "Error", JOptionPane.ERROR_MESSAGE);
             } else
-                registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), dateIn.getText(), emailIn.getText(), phoneIn.getText());
-
+                registerAccount(nameIn.getText(), lastNameIn.getText(), cityIn.getText(), new java.sql.Date(d.getTime()), emailIn.getText(), phoneIn.getText());
+            System.out.println("Account registered...");
         });
-        cancelBtn.setBounds(40, 380, 300, 50);
+        cancelBtn.setBounds(40, 390, 300, 50);
         cancelBtn.setFont(new Font(null, Font.BOLD, 20));
         cancelBtn.addActionListener((e -> mainForm()));
 
+        atm.add(datePicker);
         atm.add(emailTxt);
         atm.add(phoneTxt);
         atm.add(emailIn);
@@ -866,7 +964,7 @@ public class ATMInterface {
         atm.add(cityTxt);
         atm.add(cityIn);
         atm.add(dateTxt);
-        atm.add(dateIn);
+        /*atm.add(dateIn);*/
         atm.add(cancelBtn);
         atm.add(registerBtn);
 
@@ -874,83 +972,8 @@ public class ATMInterface {
         atm.repaint();
     }
 
-    private void registerAccount(String name, String lastName, String city, String date, String email, String phone){
-        String[] dateDivided = date.split("/");
-
-        if(Integer.parseInt(dateDivided[2]) > Year.now().getValue()){
-            JOptionPane.showMessageDialog(null, "Errore: anno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        boolean meseGrande = false, bisestile = false;
-        switch (dateDivided[1]) {
-            case "02" -> {
-                if (Integer.parseInt(dateDivided[1]) % 4 == 0) {
-                    bisestile = true;
-                }
-            }
-            case "01", "03", "05", "07", "08", "10", "12" -> meseGrande = true;
-            case "04", "06", "09", "11" -> {
-            }
-            default -> {
-                JOptionPane.showMessageDialog(null, "Errore: mese non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-
-        switch(dateDivided[0]){
-            case "01":
-            case "02":
-            case "03":
-            case "04":
-            case "05":
-            case "06":
-            case "07":
-            case "08":
-            case "09":
-            case "10":
-            case "11":
-            case "12":
-            case "13":
-            case "14":
-            case "15":
-            case "16":
-            case "17":
-            case "18":
-            case "19":
-            case "20":
-            case "21":
-            case "22":
-            case "23":
-            case "24":
-            case "25":
-            case "26":
-            case "27":
-            case "28":
-                break;
-            case "29":
-                if(!(dateDivided[1].equals("02") && bisestile)){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            case "30":
-                if(dateDivided[1].equals("02")){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            case "31":
-                if(dateDivided[1].equals("02") || !meseGrande){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            default:
-                JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                return;
-        }
-
+    private void registerAccount(String name, String lastName, String city, Date date, String email, String phone){
+        System.out.println("Registering account");
         Account newPerson = new Account(name, lastName, date, city, 1000, 0, "", false, email, phone, 0, false);
         int pin = newPerson.createAccount();
         if(pin==1000 || pin==1001)
@@ -962,83 +985,7 @@ public class ATMInterface {
         }
     }
 
-    private void registerAccount(String name, String lastName, String city, String date, boolean admin, String email, String phone){
-        String[] dateDivided = date.split("/");
-
-        if(Integer.parseInt(dateDivided[2]) > Year.now().getValue()){
-            JOptionPane.showMessageDialog(null, "Errore: anno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        boolean meseGrande = false, bisestile = false;
-        switch (dateDivided[1]) {
-            case "02" -> {
-                if (Integer.parseInt(dateDivided[1]) % 4 == 0) {
-                    bisestile = true;
-                }
-            }
-            case "01", "03", "05", "07", "08", "10", "12" -> meseGrande = true;
-            case "04", "06", "09", "11" -> {
-            }
-            default -> {
-                JOptionPane.showMessageDialog(null, "Errore: mese non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-
-        switch(dateDivided[0]){
-            case "01":
-            case "02":
-            case "03":
-            case "04":
-            case "05":
-            case "06":
-            case "07":
-            case "08":
-            case "09":
-            case "10":
-            case "11":
-            case "12":
-            case "13":
-            case "14":
-            case "15":
-            case "16":
-            case "17":
-            case "18":
-            case "19":
-            case "20":
-            case "21":
-            case "22":
-            case "23":
-            case "24":
-            case "25":
-            case "26":
-            case "27":
-            case "28":
-                break;
-            case "29":
-                if(!(dateDivided[1].equals("02") && bisestile)){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            case "30":
-                if(dateDivided[1].equals("02")){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            case "31":
-                if(dateDivided[1].equals("02") || !meseGrande){
-                    JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                break;
-            default:
-                JOptionPane.showMessageDialog(null, "Errore: giorno non valido", "Errore", JOptionPane.ERROR_MESSAGE);
-                return;
-        }
-
+    private void registerAccount(String name, String lastName, String city, Date date, boolean admin, String email, String phone){
         Account newPerson = new Account(name, lastName, date, city, 1000, 0, "", admin, email, phone, 0, false);
         int pin = newPerson.createAccount();
         if(pin==1000 || pin==1001)
